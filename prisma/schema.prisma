@@ -10,7 +10,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
+model Users {
   id String @id @default(auto()) @map("_id") @db.ObjectId
   email String @unique
   password String
@@ -21,6 +21,16 @@ model User {
   username String? @unique
   avatar String?
   bio String?
+  otp_code String?
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+  tokens Tokens[]
+}
+
+model Tokens {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  token String
+  created_at DateTime @default(now())
+  user_id String @db.ObjectId
+  user Users @relation(fields: [user_id], references: [id])
 }
