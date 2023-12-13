@@ -5,41 +5,51 @@ import { PrismaService } from 'src/prisma/prisma.service'
 import { USER_MESSAGES } from 'constants/message'
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
 import * as jwt from 'jsonwebtoken'
+import { ConfigService } from '@nestjs/config'
+import { User } from '@prisma/client'
 // import { sendVerifyEmail } from 'utils/send-email'
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private config: ConfigService,
+    private prisma: PrismaService
+  ) {}
   private signAccessToken(user_id: string) {
-    return jwt.sign({ user_id }, process.env.ACCESS_TOKEN_SECRET_KEY, {
-      expiresIn: process.env.ACCESS_TOKEN_EXPIRE_TIME
-    })
+    return Promise.resolve(
+      jwt.sign({ user_id }, this.config.get('ACCESS_TOKEN_SECRET_KEY'), {
+        expiresIn: this.config.get('ACCESS_TOKEN_EXPIRE_TIME')
+      })
+    )
   }
   private signRefreshToken(user_id: string) {
-    return jwt.sign({ user_id }, process.env.REFRESH_TOKEN_SECRET_KEY, {
-      expiresIn: process.env.REFRESH_TOKEN_EXPIRE_TIME
-    })
+    return Promise.resolve(
+      jwt.sign({ user_id }, this.config.get('REFRESH_TOKEN_SECRET_KEY'), {
+        expiresIn: this.config.get('REFRESH_TOKEN_EXPIRE_TIME')
+      })
+    )
   }
   private signVerifyEmailToken(user_id: string) {
-    return jwt.sign({ user_id }, process.env.VERIFY_EMAIL_TOKEN_SECRET_KEY, {
-      expiresIn: process.env.VERIFY_EMAIL_TOKEN_EXPIRE_TIME
-    })
+    return Promise.resolve(
+      jwt.sign({ user_id }, this.config.get('VERIFY_EMAIL_TOKEN_SECRET_KEY'), {
+        expiresIn: this.config.get('VERIFY_EMAIL_TOKEN_EXPIRE_TIME')
+      })
+    )
   }
   async register(dto: RegisterDto) {
     try {
-      const user = await this.prisma.users.create({
+      const user = await this.prisma.user.create({
         data: {
           ...dto,
           password: hashPassword(dto.password)
         }
       })
-      const verify_email_token = this.signVerifyEmailToken(user.id)
+      const verify_email_token = await this.signVerifyEmailToken(user.id)
       console.log('verify_email_token:', verify_email_token)
-
       // await sendVerifyEmail(
       //   user.email,
       //   'Verify Email',
-      //   `${process.env.CLIENT_URL}/verify-email?token=${verify_email_token}`
+      //   `${this.config.get('CLIENT_URL')}/verify-email?token=${verify_email_token}`
       // )
       return {
         message: USER_MESSAGES.REGISTER_SUCCESS
@@ -52,7 +62,7 @@ export class UserService {
     }
   }
   async login(dto: LoginDto) {
-    const user = await this.prisma.users.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: {
         email: dto.email
       },
@@ -71,19 +81,29 @@ export class UserService {
     if (user.password !== hashPassword(dto.password)) {
       throw new NotFoundException(USER_MESSAGES.EMAIL_OR_PASSWORD_INCORRECT)
     }
+    const [access_token, refresh_token] = await Promise.all([
+      this.signAccessToken(user.id),
+      this.signRefreshToken(user.id)
+    ])
+    await this.prisma.token.create({
+      data: {
+        token: refresh_token,
+        user_id: user.id
+      }
+    })
     return {
       message: USER_MESSAGES.LOGIN_SUCCESS,
-      user
+      result: {
+        access_token,
+        refresh_token
+      }
     }
   }
-  async verifyEmail(token: string) {
-    try {
-      const { user_id } = jwt.verify(token, process.env.VERIFY_EMAIL_TOKEN_SECRET_KEY) as {
-        user_id: string
-      }
-      await this.prisma.users.update({
+  async verifyEmail(user: User) {
+    if (!user.verified) {
+      await this.prisma.user.update({
         where: {
-          id: user_id
+          id: user.id
         },
         data: {
           verified: true
@@ -92,8 +112,9 @@ export class UserService {
       return {
         message: USER_MESSAGES.VERIFY_EMAIL_SUCCESS
       }
-    } catch (error) {
-      throw new BadRequestException(USER_MESSAGES.VERIFY_EMAIL_TOKEN_EXPIRED)
+    }
+    return {
+      message: USER_MESSAGES.EMAIL_ALREADY_VERIFIED
     }
   }
 }

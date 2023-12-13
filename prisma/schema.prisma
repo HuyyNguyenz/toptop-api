@@ -10,7 +10,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Users {
+model User {
   id String @id @default(auto()) @map("_id") @db.ObjectId
   email String @unique
   password String
@@ -24,13 +24,13 @@ model Users {
   otp_code String?
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
-  tokens Tokens[]
+  tokens Token[]
 }
 
-model Tokens {
+model Token {
   id String @id @default(auto()) @map("_id") @db.ObjectId
   token String
   created_at DateTime @default(now())
   user_id String @db.ObjectId
-  user Users @relation(fields: [user_id], references: [id])
+  user User @relation(fields: [user_id], references: [id])
 }

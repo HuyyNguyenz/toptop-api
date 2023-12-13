@@ -4,5 +4,6 @@ export const USER_MESSAGES = {
   EMAIL_EXIST: 'Email already exist',
   EMAIL_OR_PASSWORD_INCORRECT: 'Email or password is incorrect',
   VERIFY_EMAIL_TOKEN_EXPIRED: 'Verify email token expired',
-  VERIFY_EMAIL_SUCCESS: 'Verify email successfully'
+  VERIFY_EMAIL_SUCCESS: 'Verify email successfully',
+  EMAIL_ALREADY_VERIFIED: 'Email already verified'
 } as const
