@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
-import { LoginDto, RegisterDto } from './dto'
+import { LoginDto, RegisterDto } from './dtos'
 import { hashPassword } from 'utils/crypto'
 import { PrismaService } from 'src/prisma/prisma.service'
 import { USER_MESSAGES } from 'constants/message'
@@ -49,7 +49,7 @@ export class UserService {
       // await sendVerifyEmail(
       //   user.email,
       //   'Verify Email',
-      //   `${this.config.get('CLIENT_URL')}/verify-email?token=${verify_email_token}`
+      //   `${process.env.CLIENT_URL}/verify-email?token=${verify_email_token}`
       // )
       return {
         message: USER_MESSAGES.REGISTER_SUCCESS

@@ -1,8 +1,8 @@
 import { Body, Controller, HttpCode, HttpStatus, Patch, Post, UseGuards } from '@nestjs/common'
 import { UserService } from './user.service'
-import { LoginDto, RegisterDto } from './dto'
-import { VerifyEmailGuard } from './guard'
-import { GetUser } from './decorator'
+import { LoginDto, RegisterDto } from './dtos'
+import { VerifyEmailGuard } from './guards'
+import { GetUser } from './decorators'
 import { User } from '@prisma/client'
 
 @Controller('users')
