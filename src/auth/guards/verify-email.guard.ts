@@ -1,7 +1,7 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import * as jwt from 'jsonwebtoken'
-import { USER_MESSAGES } from 'constants/message'
+import { AUTH_MESSAGES } from 'constants/message'
 import { PrismaService } from 'src/prisma/prisma.service'
 
 @Injectable()
@@ -23,7 +23,7 @@ export class VerifyEmailGuard implements CanActivate {
       request.user = user
       return true
     } catch (error) {
-      throw new ForbiddenException(USER_MESSAGES.VERIFY_EMAIL_TOKEN_EXPIRED)
+      throw new ForbiddenException(AUTH_MESSAGES.VERIFY_EMAIL_TOKEN_EXPIRED_OR_INVALID)
     }
   }
 }

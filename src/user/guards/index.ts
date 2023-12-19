@@ -1,1 +1,1 @@
-export * from './verify-email.guard'
+export * from './user.guard'
