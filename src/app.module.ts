@@ -1,13 +1,17 @@
 import { Module } from '@nestjs/common'
-import { UserModule } from './user/user.module'
 import { ConfigModule } from '@nestjs/config'
-import { PrismaModule } from './prisma/prisma.module'
-import { AuthModule } from './auth/auth.module';
+import { UserModule } from './modules/user'
+import { PrismaModule } from './modules/prisma'
+import { AuthModule } from './modules/auth'
+import { JwtModule } from '@nestjs/jwt'
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true
+    }),
+    JwtModule.register({
+      global: true
     }),
     UserModule,
     PrismaModule,

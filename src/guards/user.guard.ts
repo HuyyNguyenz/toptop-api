@@ -1,21 +1,24 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException, UnauthorizedException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { AUTH_MESSAGES } from 'constants/message'
-import { PrismaService } from 'src/prisma/prisma.service'
-import * as jwt from 'jsonwebtoken'
+import { JwtService } from '@nestjs/jwt'
+import { AUTH_MESSAGES } from 'src/constants/message'
+import { PrismaService } from 'src/modules/prisma/prisma.service'
 
 @Injectable()
 export class UserGuard implements CanActivate {
   constructor(
-    private config: ConfigService,
-    private prisma: PrismaService
+    private readonly config: ConfigService,
+    private readonly jwt: JwtService,
+    private readonly prisma: PrismaService
   ) {}
   async canActivate(context: ExecutionContext) {
     const request = context.switchToHttp().getRequest()
-    const token = request.headers.authorization?.split(' ')[1]
+    const token = request.headers.authorization?.split(' ')[1] as string
     if (!token) throw new UnauthorizedException(AUTH_MESSAGES.YOU_ARE_NOT_AUTHENTICATED)
     try {
-      const { user_id } = jwt.verify(token, this.config.get('ACCESS_TOKEN_SECRET_KEY')) as { user_id: string }
+      const { user_id } = this.jwt.verify<{ user_id: string }>(token, {
+        secret: this.config.get('ACCESS_TOKEN_SECRET_KEY')
+      })
       const user = await this.prisma.user.findUnique({
         where: {
           id: user_id

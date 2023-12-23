@@ -1,14 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
-import { PrismaService } from 'src/prisma/prisma.service'
+import { PrismaService } from '../prisma/prisma.service'
 import { ConfigService } from '@nestjs/config'
 import { User } from '@prisma/client'
-import { USER_MESSAGES } from 'constants/message'
+import { USER_MESSAGES } from 'src/constants/message'
 
 @Injectable()
 export class UserService {
   constructor(
-    private config: ConfigService,
-    private prisma: PrismaService
+    private readonly config: ConfigService,
+    private readonly prisma: PrismaService
   ) {}
   async getMe(user: User) {
     if (!user) {

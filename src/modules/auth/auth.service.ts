@@ -1,41 +1,47 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
-import { LoginDto, RegisterDto } from './dtos'
-import { hashPassword } from 'utils/crypto'
-import { PrismaService } from 'src/prisma/prisma.service'
-import { AUTH_MESSAGES } from 'constants/message'
+import { LoginDto, RegisterDto } from 'src/dtos'
+import { hashPassword } from 'src/utils/crypto'
+import { PrismaService } from '../prisma/prisma.service'
+import { AUTH_MESSAGES } from 'src/constants/message'
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
-import * as jwt from 'jsonwebtoken'
 import { ConfigService } from '@nestjs/config'
-import { User } from '@prisma/client'
-import { sendVerifyEmail } from 'utils/send-email'
+import { sendVerifyEmail } from 'src/utils/send-email'
+import { JwtService } from '@nestjs/jwt'
 
 @Injectable()
 export class AuthService {
   constructor(
-    private config: ConfigService,
-    private prisma: PrismaService
+    private readonly config: ConfigService,
+    private readonly jwt: JwtService,
+    private readonly prisma: PrismaService
   ) {}
   private signAccessToken(user_id: string) {
-    return Promise.resolve(
-      jwt.sign({ user_id }, this.config.get('ACCESS_TOKEN_SECRET_KEY'), {
+    return this.jwt.signAsync(
+      { user_id },
+      {
+        secret: this.config.get('ACCESS_TOKEN_SECRET_KEY'),
         expiresIn: this.config.get('ACCESS_TOKEN_EXPIRE_TIME')
-      })
+      }
     )
   }
   private signRefreshToken(user_id: string, exp?: number) {
-    return Promise.resolve(
-      exp
-        ? jwt.sign({ user_id, exp }, this.config.get('REFRESH_TOKEN_SECRET_KEY'))
-        : jwt.sign({ user_id }, this.config.get('REFRESH_TOKEN_SECRET_KEY'), {
+    return exp
+      ? this.jwt.signAsync({ user_id, exp }, { secret: this.config.get('REFRESH_TOKEN_SECRET_KEY') })
+      : this.jwt.signAsync(
+          { user_id },
+          {
+            secret: this.config.get('REFRESH_TOKEN_SECRET_KEY'),
             expiresIn: this.config.get('REFRESH_TOKEN_EXPIRE_TIME')
-          })
-    )
+          }
+        )
   }
   private signVerifyEmailToken(user_id: string) {
-    return Promise.resolve(
-      jwt.sign({ user_id }, this.config.get('VERIFY_EMAIL_TOKEN_SECRET_KEY'), {
+    return this.jwt.signAsync(
+      { user_id },
+      {
+        secret: this.config.get('VERIFY_EMAIL_TOKEN_SECRET_KEY'),
         expiresIn: this.config.get('VERIFY_EMAIL_TOKEN_EXPIRE_TIME')
-      })
+      }
     )
   }
   async register(dto: RegisterDto) {
@@ -101,11 +107,11 @@ export class AuthService {
       }
     }
   }
-  async verifyEmail(user: User) {
-    if (!user.verified) {
+  async verifyEmail(user_id: string, verified: boolean) {
+    if (!verified) {
       await this.prisma.user.update({
         where: {
-          id: user.id
+          id: user_id
         },
         data: {
           verified: true
@@ -119,7 +125,7 @@ export class AuthService {
       message: AUTH_MESSAGES.EMAIL_ALREADY_VERIFIED
     }
   }
-  async refreshToken(refresh_token: string, refresh_token_decoded: { user_id: string; iat: number; exp: number }) {
+  async refreshToken(refresh_token: string, refresh_token_decoded: { user_id: string; exp: number }) {
     const token = await this.prisma.token.findUnique({
       where: {
         token: refresh_token
@@ -152,4 +158,6 @@ export class AuthService {
       }
     }
   }
+  async googleLogin() {}
+  async googleRedirect() {}
 }
